@@ -1,8 +1,7 @@
 import React, { useEffect } from 'react';
-import { Operation, Point } from './Service/Operations';
+import { Operation, Point, sleep } from './Service/Operations';
 import { useDrawingContext } from '../Context.ts/DrawingContext';
 import { useLoading } from '../Context.ts/LoadingContext';
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const GrhamScan = () => {
   const { addLinePoint, points, addLinePoints } = useDrawingContext();

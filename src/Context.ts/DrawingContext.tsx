@@ -17,6 +17,11 @@ type DrawingContextType = {
   popLinePoint: () => void;
   addPoint: (point: Point) => void;
   retry: boolean;
+  setSolve: () => void;
+  quickHullPoints: Point[];
+  resetSolve: () => void;
+  addQuickHullPoints: (p: Point[]) => void;
+  resetQuickHullPoints: () => void;
 };
 
 const DrawingContext = createContext<DrawingContextType | undefined>(undefined);
@@ -27,8 +32,15 @@ const DrawingProvider: React.FC<DrawingProviderProps> = ({ children }) => {
   const [points, setPoints] = useState<Point[]>([]);
   const [linePoints, setlinePoints] = useState<Point[]>([]);
   const [retry, setRetry] = useState<boolean>(false);
+  const [quickHullPoints, setQuickHullPoints] = useState<Point[]>([]);
   const toggleRetry = () => {
     setRetry((retry) => !retry);
+  };
+  const setSolve = () => {
+    setRetry(() => true);
+  };
+  const resetSolve = () => {
+    setRetry(() => false);
   };
   const addPoints = (points: Point[]) => {
     setPoints(() => points);
@@ -53,6 +65,12 @@ const DrawingProvider: React.FC<DrawingProviderProps> = ({ children }) => {
     const arr = [...linePoints].slice(0, -1);
     setlinePoints(() => arr);
   };
+  const addQuickHullPoints = (p: Point[]) => {
+    setQuickHullPoints(p);
+  };
+  const resetQuickHullPoints = () => {
+    setQuickHullPoints([]);
+  };
   const contextValue: DrawingContextType = {
     points,
     linePoints,
@@ -64,7 +82,12 @@ const DrawingProvider: React.FC<DrawingProviderProps> = ({ children }) => {
     toggleRetry,
     retry,
     popLinePoint,
+    quickHullPoints,
     addPoint,
+    setSolve,
+    resetSolve,
+    addQuickHullPoints,
+    resetQuickHullPoints,
   };
 
   return (

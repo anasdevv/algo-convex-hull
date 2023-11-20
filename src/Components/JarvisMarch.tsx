@@ -1,34 +1,15 @@
 import React, { useEffect } from 'react';
 import { Point, useDrawingContext } from '../Context.ts/DrawingContext';
 import { useLoading } from '../Context.ts/LoadingContext';
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+import { sleep, Operation } from './Service/Operations';
 
-const ccw = (a: Point, b: Point, c: Point) => {
-  const area2 = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
-  if (area2 < 0) return -1;
-  else if (area2 > 0) return 1;
-  else return 0;
-};
-const getPointWithLowestY = (points: Point[]) => {
-  let startingPoint = points[0];
-  let startingPointIndex = 0;
-  for (let i = 0; i < points.length; i++) {
-    if (
-      startingPoint.y > points[i].y ||
-      (startingPoint.y === points[i].y && startingPoint.x > points[i].x)
-    ) {
-      startingPoint = points[i];
-      startingPointIndex = i;
-    }
-  }
-  return { startingPoint, startingPointIndex };
-};
 const JarvisMarch = () => {
   const { addLinePoint, points } = useDrawingContext();
   const { showLoading, hideLoading } = useLoading();
   useEffect(() => {
     async function jarvisMarch(points: Point[]) {
-      const { startingPoint, startingPointIndex } = getPointWithLowestY(points);
+      const { startingPoint, startingPointIndex } =
+        Operation.getPointWithLowestY(points);
       const hull = [startingPoint];
       addLinePoint(startingPoint);
       let currentPoint = startingPoint;
@@ -39,7 +20,7 @@ const JarvisMarch = () => {
 
         for (let j = 0; j < points.length; j++) {
           if (points[j] === currentPoint) continue; // Skip the current point
-          const turn = ccw(currentPoint, nextPoint, points[j]);
+          const turn = Operation.ccw(currentPoint, nextPoint, points[j]);
           console.log(currentPoint, nextPoint, points[j], turn);
           if (nextPoint === currentPoint || turn === -1) {
             nextPoint = points[j]; // Update next point

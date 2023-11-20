@@ -1,75 +1,31 @@
 import { useActiveState } from '../Context.ts/ActiveContex';
 import { useDrawingContext } from '../Context.ts/DrawingContext';
 import { BaseCaseBruteForce } from './Bruteforce';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import p5 from 'p5';
 import JarvisMarch from './JarvisMarch';
 import GrhamScan from './GrhamScan';
 import QuickHull from './QuickHull';
-import { Point } from './Service/Operations';
+import {
+  Point,
+  generateGaussianRandomPoints,
+  generateRandomPoints,
+  generateSphericalRandomPoints,
+  generateUniformRandomPoints,
+} from './Service/Operations';
 import Spinner from './Spinner';
 import { useLoading } from '../Context.ts/LoadingContext';
 import LineIntersection from './LineIntersection';
+import QuickElimination from './QuickElimination';
+import { sleep } from './Service/Operations';
 
 // todo refactor and error handling
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const removeLeadingZeros = (input: any) => {
   const sanitizedInput = input.replace(/^0+/, '');
   return sanitizedInput === '' ? undefined : Number(sanitizedInput);
 };
 type PointsType = 'random' | 'uniform' | 'spherical' | 'gaussain';
-function generateUniformRandomPoints(
-  minX: number,
-  maxX: number,
-  minY: number,
-  maxY: number,
-  count: number
-) {
-  const points = [];
-  for (let i = 0; i < count; i++) {
-    const x = Math.random() * (maxX - minX) + minX;
-    const y = Math.random() * (maxY - minY) + minY;
-    points.push({ x, y });
-  }
-  return points;
-}
-function generateSphericalRandomPoints(
-  radius: number,
-  count: number,
-  screenWidth: number = 50,
-  screenHeight: number = 30
-) {
-  const points: Point[] = [];
-  for (let i = 0; i < count; i++) {
-    const theta = Math.random() * 2 * Math.PI;
-    const x = screenWidth / 2 + radius * Math.cos(theta); // Adjusted for screen center
-    const y = screenHeight / 2 + radius * Math.sin(theta); // Adjusted for screen center
-    points.push({ x, y });
-  }
-  return points;
-}
-function generateGaussianRandomPoints(
-  meanX: number,
-  stdDevX: number,
-  meanY: number,
-  stdDevY: number,
-  count: number
-) {
-  const points: Point[] = [];
-  for (let i = 0; i < count; i++) {
-    const x = meanX + Math.random() * stdDevX;
-    const y = meanY + Math.random() * stdDevY;
-    points.push({ x, y });
-  }
-  return points;
-}
-
-const generateRandomPoints = (n: number): Point[] =>
-  Array.from({ length: n }, () => ({
-    x: Math.random() * 1000,
-    y: Math.random() * 550,
-  }));
 
 export const PointsForm = ({ p5 }: { p5: p5 | null }) => {
   const [numberOfPoints, setNumberOfPoints] = useState<number | undefined>(
@@ -78,7 +34,6 @@ export const PointsForm = ({ p5 }: { p5: p5 | null }) => {
   const [pointsType, setPointsType] = useState<PointsType>('random');
   const [method, setMethod] = useState<boolean>(false);
   const [pointsGenLoading, setPointsGenLoading] = useState<boolean>(false);
-  const [drawRandomLines, setDrawRandomLines] = useState<boolean>(false);
   const {
     addPoints,
     resetLinePoints,
@@ -87,6 +42,8 @@ export const PointsForm = ({ p5 }: { p5: p5 | null }) => {
     addLinePoints,
     addPoint,
     toggleRetry,
+    setSolve,
+    resetQuickHullPoints,
   } = useDrawingContext();
   // only for lines
   const pX1Ref = useRef<HTMLInputElement>(null);
@@ -165,7 +122,7 @@ export const PointsForm = ({ p5 }: { p5: p5 | null }) => {
       }
     }
   };
-
+  console.log('active ', active);
   const renderActiveComponent = useCallback(() => {
     if (active === 'bruteForce') {
       return <BaseCaseBruteForce />;
@@ -175,6 +132,8 @@ export const PointsForm = ({ p5 }: { p5: p5 | null }) => {
       return <GrhamScan />;
     } else if (active === 'quickHull') {
       return <QuickHull />;
+    } else if (active === 'quickElimination') {
+      return <QuickElimination />;
     } else if (active === 'line') {
       return <LineIntersection />;
     }
@@ -183,11 +142,16 @@ export const PointsForm = ({ p5 }: { p5: p5 | null }) => {
   }, [active]);
   const isDisabled = loading || pointsGenLoading;
   const handleSubmit = () => {
+    if (method) setMethod(false);
     setMethod(true);
+    if (active === 'line') {
+      setSolve();
+    }
   };
   const handleClear = () => {
     setNumberOfPoints(0);
     addPoints([]);
+    if (active === 'quickElimination') resetQuickHullPoints();
     setMethod(() => false);
     if (p5) {
       setTimeout(() => {
@@ -240,7 +204,7 @@ export const PointsForm = ({ p5 }: { p5: p5 | null }) => {
                   <input
                     type='number'
                     placeholder='x'
-                    disabled={active === 'line' && linePoints.length >= 4}
+                    disabled={active === 'line' && points.length >= 4}
                     ref={pX1Ref}
                     name='p_x_1'
                     id='p_x_1'
@@ -249,7 +213,7 @@ export const PointsForm = ({ p5 }: { p5: p5 | null }) => {
                   <input
                     type='number'
                     placeholder='y'
-                    disabled={active === 'line' && linePoints.length >= 4}
+                    disabled={active === 'line' && points.length >= 4}
                     ref={pY1Ref}
                     name='p_y_1'
                     id='p_y_1'
@@ -264,7 +228,7 @@ export const PointsForm = ({ p5 }: { p5: p5 | null }) => {
                 <div className='flex space-x-2'>
                   <input
                     type='number'
-                    disabled={active === 'line' && linePoints.length >= 4}
+                    disabled={active === 'line' && points.length >= 4}
                     placeholder='x'
                     ref={pX2Ref}
                     name='p_x_2'
@@ -273,7 +237,7 @@ export const PointsForm = ({ p5 }: { p5: p5 | null }) => {
                   />
                   <input
                     type='number'
-                    disabled={active === 'line' && linePoints.length >= 4}
+                    disabled={active === 'line' && points.length >= 4}
                     placeholder='y'
                     ref={pY2Ref}
                     name='p_x_2'
@@ -376,57 +340,60 @@ export const PointsForm = ({ p5 }: { p5: p5 | null }) => {
           {active === 'line' ? 'Draw' : 'Generate'}
         </button>
       </div>
-      <div className='items-center my-5 w-full'>
-        <button
-          className={`items-center justify-center flex rounded-md w-full bg-[#7C3AED] px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-00 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 hover:bg-[#6D28D9] ${
-            isDisabled && 'cursor-not-allowed'
-          }`}
-          onClick={() => {
-            const points = generateRandomPoints(4);
-            addPoints(points);
-          }}
-        >
-          Draw Random Lines
-          <svg
-            className='rtl:rotate-180 w-3.5 h-3.5 ms-2'
-            aria-hidden='true'
-            xmlns='http://www.w3.org/2000/svg'
-            fill='none'
-            viewBox='0 0 14 10'
+      {active === 'line' && (
+        <div className='items-center my-5 w-full'>
+          <button
+            className={`items-center justify-center flex rounded-md w-full bg-[#7C3AED] px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-00 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 hover:bg-[#6D28D9] ${
+              isDisabled && 'cursor-not-allowed'
+            }`}
+            onClick={() => {
+              const points = generateRandomPoints(4);
+              addPoints(points);
+            }}
           >
-            <path
-              stroke='currentColor'
-              stroke-linecap='round'
-              stroke-linejoin='round'
-              stroke-width='2'
-              d='M1 5h12m0 0L9 1m4 4L9 9'
-            />
-          </svg>
-        </button>
-        <button
-          onClick={() => {
-            const p = points;
-            const lp = linePoints;
-            handleClear();
-            addPoints(p);
-            addLinePoints(lp);
-            console.log('lp ', lp);
-            setMethod(true);
-            toggleRetry();
-          }}
-        >
-          redraw
-        </button>
-      </div>
+            Draw Random Lines
+            <svg
+              className='rtl:rotate-180 w-3.5 h-3.5 ms-2'
+              aria-hidden='true'
+              xmlns='http://www.w3.org/2000/svg'
+              fill='none'
+              viewBox='0 0 14 10'
+            >
+              <path
+                stroke='currentColor'
+                stroke-linecap='round'
+                stroke-linejoin='round'
+                stroke-width='2'
+                d='M1 5h12m0 0L9 1m4 4L9 9'
+              />
+            </svg>
+          </button>
+          <button
+            onClick={() => {
+              const p = points;
+              const lp = linePoints;
+              handleClear();
+              addPoints(p);
+              addLinePoints(lp);
+              console.log('lp ', lp);
+              setMethod(true);
+              toggleRetry();
+            }}
+          >
+            redraw
+          </button>
+        </div>
+      )}
+
       <div className='mt-6 flex items-center justify-between gap-x-6 w-full'>
         <button
           type='button'
-          disabled={pointsGenLoading || loading}
+          disabled={pointsGenLoading || loading || points.length === 0}
           onClick={() => {
             handleClear();
           }}
           className={`w-2/4 text-sm font-semibold leading-6 text-white bg-gray-700 px-3 py-2 rounded-md shadow-sm hover:bg-gray-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-700 ${
-            isDisabled && 'cursor-not-allowed'
+            isDisabled && points.length === 0 && 'cursor-not-allowed'
           }`}
         >
           Clear

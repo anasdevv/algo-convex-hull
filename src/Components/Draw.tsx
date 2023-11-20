@@ -2,53 +2,9 @@ import { useEffect, useRef, RefObject, useState } from 'react';
 import p5 from 'p5';
 import { useDrawingContext } from '../Context.ts/DrawingContext';
 import { useActiveState } from '../Context.ts/ActiveContex';
-import { Point } from './Service/Operations';
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-const constrainPoint = (
-  point: Point,
-  canvasWidth: number,
-  canvasHeight: number
-) => {
-  const constrainedX = Math.min(Math.max(0, point.x), canvasWidth);
-  const constrainedY = Math.min(Math.max(0, point.y), canvasHeight);
-  return { x: constrainedX, y: constrainedY };
-};
-const mapOutOfBoundNumbers = (
-  point: Point,
-  canvasWidth: number,
-  canvasHeight: number,
-  offsetValue?: number,
-  proximityThreshold?: number
-): Point => {
-  const offset: number = offsetValue || 100;
-  const threshold: number = proximityThreshold || 10;
-  return point;
-  let mappedX: number = point.x;
-  if (point.x < 0) {
-    mappedX += Math.abs(offset);
-  } else if (point.x > canvasWidth) {
-    mappedX -= Math.abs(offset);
-  }
-  let mappedY: number = point.y;
-  if (point.y < 0) {
-    mappedY += Math.abs(offset);
-  } else if (point.y > canvasHeight) {
-    mappedY -= Math.abs(offset);
-  }
 
-  if (
-    Math.abs(mappedX - point.x) < threshold &&
-    Math.abs(mappedY - point.y) < threshold
-  ) {
-    const scaleFactor = 10;
-    mappedX *= scaleFactor;
-    mappedY *= scaleFactor;
-  }
-
-  return { x: mappedX, y: mappedY };
-};
 const P5Canvas = ({ setP5Instance }: any) => {
-  const { points, linePoints, retry } = useDrawingContext();
+  const { points, linePoints, retry, quickHullPoints } = useDrawingContext();
   const { active } = useActiveState();
   const p5ContainerRef = useRef();
   const [currentPoint, setCurrentPoint] = useState(0);
@@ -69,6 +25,19 @@ const P5Canvas = ({ setP5Instance }: any) => {
       };
 
       p.draw = () => {
+        if (active === 'quickElimination' && quickHullPoints.length > 0) {
+          for (let i = 0; i < quickHullPoints.length; i++) {
+            console.log('points ', points);
+            const start = quickHullPoints[i];
+            const end =
+              quickHullPoints[(i + 1) % (quickHullPoints.length as number)];
+            if (start.x || start.y || end.x || end.y) {
+              p.stroke(0, 0, 139);
+              p.strokeWeight(3);
+              p.line(start.x, start.y, end.x, end.y);
+            }
+          }
+        }
         if (active === 'line') {
           p.fill(255, 0, 0);
           p.noStroke();
@@ -96,7 +65,6 @@ const P5Canvas = ({ setP5Instance }: any) => {
                 p.strokeWeight(3);
                 p.line(start.x, start.y, end.x, end.y);
               }
-              // active !== 'grahamScan' && (await sleep(2000));
             }
           }
           if (points.length > 1) {

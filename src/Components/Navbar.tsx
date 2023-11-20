@@ -1,27 +1,18 @@
 import { Disclosure, Transition } from '@headlessui/react';
 import { useDrawingContext } from '../Context.ts/DrawingContext';
-import {
-  Bars3Icon,
-  BellIcon,
-  ChevronDownIcon,
-  XMarkIcon,
-} from '@heroicons/react/24/outline';
-import { useActiveState } from '../Context.ts/ActiveContex';
+import { ChevronDownIcon } from '@heroicons/react/24/outline';
+import { useState } from 'react';
+import useOutsideClick from './Hooks/const useOutsideClick ';
+import { ActiveState, useActiveState } from '../Context.ts/ActiveContex';
 
 type ConvexHullAlgorithm = {
-  id:
-    | 'jarvisMarch'
-    | 'bruteForce'
-    | 'divideAndConquer'
-    | 'quickHull'
-    | 'grahamScan'
-    | 'line';
-
+  id: ActiveState;
   name: string;
   description: string;
   complexity: string;
   link: string;
 };
+
 const convexHullAlgorithms: ConvexHullAlgorithm[] = [
   {
     id: 'bruteForce',
@@ -56,6 +47,14 @@ const convexHullAlgorithms: ConvexHullAlgorithm[] = [
     link: 'https://en.wikipedia.org/wiki/Quickhull',
   },
   {
+    id: 'quickElimination',
+    name: 'QuickElimination',
+    description:
+      'It recursively divides the set of points into two subsets, one on each side of a line connecting the two extreme points. It then finds the furthest point from that line, and adds it to the hull. The process is repeated for the two subsets until no more points remain.',
+    complexity: 'O(n log n)',
+    link: 'https://en.wikipedia.org/wiki/Quickhull',
+  },
+  {
     id: 'line',
     name: 'Line',
     description:
@@ -70,13 +69,38 @@ function classNames(...classes: string[]) {
 }
 const Card = ({ name, complexity, description, link }: ConvexHullAlgorithm) => {
   return (
-    <div className='max-w-sm p-6 bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700'>
-      <h5 className='mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white'>
+    <div className='w-[18rem] h-[10rem] p-6  border bg-gray-900 border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700 overflow-y-auto scrollbar-thin scrollbar-thumb-black scrollbar-track-gray-500 overflow-x-hidden flex items-center flex-col'>
+      <h5 className='mb-2 text-2xl font-bold tracking-tight text-neutral-100 dark:text-white'>
         {name}
       </h5>
-      <p className='mb-3 font-normal text-gray-700 dark:text-gray-400'>
+      <p className='mb-1 font-normal text-neutral-200 dark:text-gray-400'>
         {description}
       </p>
+      <div className='flex items-center mb-2'>
+        <span className='text-gray-100 bg-violet-500 rounded-md p-1'>
+          Complexity:
+        </span>
+        <span className='ml-2 text-gray-500 font-semibold bg-yellow-300 rounded-md p-1'>
+          {complexity}
+        </span>
+      </div>
+      {/* <button className='inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 my-2 py-2'>
+        complexity
+        <svg
+          xmlns='http://www.w3.org/2000/svg'
+          fill='none'
+          viewBox='0 0 24 24'
+          strokeWidth={1.5}
+          stroke='currentColor'
+          className='w-6 h-6'
+        >
+          <path
+            strokeLinecap='round'
+            strokeLinejoin='round'
+            d='M14.25 9.75L16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z'
+          />
+        </svg>
+      </button> */}
       <a
         href={link}
         target='_blank'
@@ -106,7 +130,12 @@ export default function Navbar() {
   const { addLinePoints, addPoints } = useDrawingContext();
 
   const { active, setIsActive } = useActiveState();
-  console.log(active);
+  const [modal, setModal] = useState('');
+  const close = () => {
+    setModal('');
+  };
+  const ref = useOutsideClick(close);
+
   return (
     <div className='bg-gray-800'>
       <div className='mx-auto px-2 sm:px-6 lg:px-3'>
@@ -124,13 +153,13 @@ export default function Navbar() {
                 </h1>
               </div>
             </div>
-            <div className='hidden sm:ml-6 sm:block w-full'>
-              <div className='flex items-center justify-evenly'>
-                {convexHullAlgorithms.map((algorithm) => (
+            <div className='hidden sm:ml-6 sm:block w-full pl-2 ml-4'>
+              <div className='flex items-center justify-evenly ml-4'>
+                {convexHullAlgorithms.map((algorithm, index) => (
                   <div key={algorithm.id} className='relative'>
                     <Disclosure>
                       {({ open }) => (
-                        <div className='flex items-center justify-start pt-2'>
+                        <div className='flex items-center justify-start pt-2 '>
                           <button
                             onClick={() => {
                               setIsActive(algorithm.id);
@@ -145,16 +174,30 @@ export default function Navbar() {
                           >
                             {algorithm.name}
                           </button>
-                          <Disclosure.Button className='text-gray-300 hover:bg-gray-700 hover:text-white rounded-md p-1 text-sm font-medium flex items-center pl-0'>
+                          <Disclosure.Button
+                            className='text-gray-300 hover:bg-gray-700 hover:text-white rounded-md p-1 text-sm font-medium flex items-center pl-0'
+                            onClick={() => {
+                              console.log(
+                                'algorithm id',
+                                algorithm.id,
+                                'modal',
+                                modal
+                              );
+                              if (modal === algorithm.id) setModal('');
+                              else setModal(algorithm.id);
+                            }}
+                          >
                             <ChevronDownIcon
                               className={classNames(
-                                open ? 'transform rotate-180' : '',
+                                algorithm.id === modal
+                                  ? 'transform rotate-180'
+                                  : '',
                                 'h-4 w-4 ml-2 text-gray-400 transition-transform duration-200'
                               )}
                             />
                           </Disclosure.Button>
                           <Transition
-                            show={open}
+                            show={modal === algorithm.id}
                             enter='transition ease-out duration-100 transform'
                             enterFrom='scale-95 opacity-0'
                             enterTo='scale-100 opacity-100'
@@ -163,8 +206,12 @@ export default function Navbar() {
                             leaveTo='scale-95 opacity-0'
                           >
                             <Disclosure.Panel
-                              static
-                              className='absolute top-7 z-10 left-1/2 transform -translate-x-1/2 mt-3 px-2 w-screen max-w-sm sm:px-0'
+                              ref={ref}
+                              className={`absolute top-4 z-50  transform -translate-x-1/2 mt-3 px-2 w-[20rem] h-10 sm:px-0 ${
+                                index === convexHullAlgorithms.length - 1
+                                  ? 'left-[-40px]'
+                                  : 'left-[4rem]'
+                              }`}
                             >
                               {/* <div className='rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 overflow-hidden'>
                                 <div className='relative grid gap-6 bg-white px-5 py-6 sm:gap-8 sm:p-8'>

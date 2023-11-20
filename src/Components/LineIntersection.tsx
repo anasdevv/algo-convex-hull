@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useDrawingContext } from '../Context.ts/DrawingContext';
-import { Operation } from './Service/Operations';
+import { Operation, sleep } from './Service/Operations';
 import Modal from './Modal';
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+import { useLoading } from '../Context.ts/LoadingContext';
 
 const LineIntersection = () => {
-  const { points, addPoints } = useDrawingContext();
+  const { points, retry, resetSolve } = useDrawingContext();
+  const { showLoading, hideLoading } = useLoading();
   const [modalContent, setModalContent] = useState<string>('');
   const hideModal = () => {
     setModalContent('');
@@ -22,7 +23,8 @@ const LineIntersection = () => {
   };
   useEffect(() => {
     const findIntersection = async () => {
-      if (points.length > 1) {
+      if (points.length > 1 && retry) {
+        showLoading();
         if (intersection()) {
           await sleep(1000);
 
@@ -32,10 +34,12 @@ const LineIntersection = () => {
           await sleep(1000);
           setModalContent('DO_NOT_INTERSECT');
         }
+        resetSolve();
+        hideLoading();
       }
     };
     findIntersection();
-  }, [points]);
+  }, [points, retry]);
 
   return (
     <div>

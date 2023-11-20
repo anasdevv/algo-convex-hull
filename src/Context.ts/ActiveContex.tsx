@@ -3,9 +3,10 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 export type ActiveState =
   | 'jarvisMarch'
   | 'bruteForce'
-  | 'divideAndConquer'
+  | 'quickElimination'
   | 'quickHull'
-  | 'grahamScan';
+  | 'grahamScan'
+  | 'line';
 
 interface ActiveStateContextProps {
   active: string;
