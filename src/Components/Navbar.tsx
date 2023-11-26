@@ -162,9 +162,15 @@ export default function Navbar() {
                         <div className='flex items-center justify-start pt-2 '>
                           <button
                             onClick={() => {
-                              setIsActive(algorithm.id);
+                              // setIsActive(algorithm.id);
+                              setIsActive((active) => {
+                                if (active === 'line') addPoints([]);
+                                return algorithm.id;
+                              });
+                              if (algorithm.id === 'line') {
+                                addPoints([]);
+                              }
                               addLinePoints([]);
-                              if (algorithm.id === 'line') addPoints([]);
                             }}
                             className={` hover:bg-gray-700 hover:text-white cursor-pointer rounded-md p-2 text-sm font-medium flex items-center ${
                               algorithm.id === active

@@ -56,11 +56,14 @@ const QuickHull = () => {
     addLinePoint(point);
   }, []);
   useEffect(() => {
+    if (!points || !points.length) return;
     const hull = new Set<Point>();
 
     showLoading();
-    quickHull(points, points.length, hull);
-    const p = sortByAngle([...hull]);
+    quickHull(points, points?.length ?? 0, hull);
+    console.log('hull ', hull);
+    console.log('points ', points);
+    const p = sortByAngle([...hull] ?? []);
     const printHull = async () => {
       for (let i = 0; i < p.length; i++) {
         await sleep(1000);
@@ -69,7 +72,7 @@ const QuickHull = () => {
     };
     printHull();
     hideLoading();
-  }, []);
+  }, [points]);
 
   return <div>QuickHull</div>;
 };

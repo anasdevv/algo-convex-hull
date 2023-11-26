@@ -8,6 +8,7 @@ export class Operation {
     else return 0;
   }
   static getPointWithLowestY(points: Point[]) {
+    if (points.length === 0) throw new Error('Empty points');
     let startingPoint = points[0];
     let startingPointIndex = 0;
     for (let i = 0; i < points.length; i++) {
@@ -27,6 +28,7 @@ export class Operation {
     return Math.atan2(y2 - y1, x2 - x1);
   }
   static findSide(p1: Point, p2: Point, p: Point) {
+    if (!p1 || !p2 || !p) return 0;
     const val = (p.y - p1.y) * (p2.x - p1.x) - (p2.y - p1.y) * (p.x - p1.x);
 
     if (val > 0) return 1;
@@ -37,6 +39,22 @@ export class Operation {
   static lineDist(p1: Point, p2: Point, p: Point) {
     return Math.abs(
       (p.y - p1.y) * (p2.x - p1.x) - (p2.y - p1.y) * (p.x - p1.x)
+    );
+  }
+  static crossProduct(a: Point, b: Point): number {
+    return a.x * b.y - a.y * b.x;
+  }
+  static boundingBoxIntersect(
+    p1: Point,
+    q1: Point,
+    p2: Point,
+    q2: Point
+  ): boolean {
+    return (
+      Math.max(p1.x, q1.x) >= Math.min(p2.x, q2.x) &&
+      Math.max(p2.x, q2.x) >= Math.min(p1.x, q1.x) &&
+      Math.max(p1.y, q1.y) >= Math.min(p2.y, q2.y) &&
+      Math.max(p2.y, q2.y) >= Math.min(p1.y, q1.y)
     );
   }
 }
@@ -235,11 +253,12 @@ export function findUpperLeftmostPoint(convexHull: Point[]) {
 }
 
 export function sortByAngle(convexHull: Point[]) {
+  if (convexHull?.length === 0) return [];
   // Find the upper-leftmost point as the reference point O
   const pointO = findUpperLeftmostPoint(convexHull);
 
   // Calculate angles and create an array of objects {point, angle}
-  const angles = convexHull.map((pointB) => {
+  const angles = convexHull?.map((pointB) => {
     const angle = Math.atan2(pointB.y - pointO.y, pointB.x - pointO.x);
     return { point: pointB, angle: angle };
   });
@@ -248,6 +267,6 @@ export function sortByAngle(convexHull: Point[]) {
   angles.sort((a, b) => a.angle - b.angle);
 
   // Extract and return the sorted points
-  const sortedPoints = angles.map((item) => item.point);
+  const sortedPoints = angles?.map((item) => item.point);
   return sortedPoints;
 }

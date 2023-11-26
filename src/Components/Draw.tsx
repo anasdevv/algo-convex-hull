@@ -4,7 +4,7 @@ import { useDrawingContext } from '../Context.ts/DrawingContext';
 import { useActiveState } from '../Context.ts/ActiveContex';
 
 const P5Canvas = ({ setP5Instance }: any) => {
-  const { points, linePoints, retry, quickHullPoints } = useDrawingContext();
+  const { points, linePoints, quickHullPoints } = useDrawingContext();
   const { active } = useActiveState();
   const p5ContainerRef = useRef();
   const [currentPoint, setCurrentPoint] = useState(0);
@@ -96,7 +96,7 @@ const P5Canvas = ({ setP5Instance }: any) => {
     return () => {
       canvas.remove();
     };
-  }, [points, linePoints, retry]);
+  }, [points, linePoints]);
   return (
     <>
       <div

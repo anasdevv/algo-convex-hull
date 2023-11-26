@@ -26,11 +26,17 @@ const removeLeadingZeros = (input: any) => {
   return sanitizedInput === '' ? undefined : Number(sanitizedInput);
 };
 type PointsType = 'random' | 'uniform' | 'spherical' | 'gaussain';
+export type LineIntersectionType =
+  | 'crossProduct'
+  | 'orientation'
+  | 'boundingBox';
 
 export const PointsForm = ({ p5 }: { p5: p5 | null }) => {
   const [numberOfPoints, setNumberOfPoints] = useState<number | undefined>(
     undefined
   );
+  const [lineIntersectionType, setLineIntersectionType] =
+    useState<LineIntersectionType>('orientation');
   const [pointsType, setPointsType] = useState<PointsType>('random');
   const [method, setMethod] = useState<boolean>(false);
   const [pointsGenLoading, setPointsGenLoading] = useState<boolean>(false);
@@ -132,10 +138,10 @@ export const PointsForm = ({ p5 }: { p5: p5 | null }) => {
       return <GrhamScan />;
     } else if (active === 'quickHull') {
       return <QuickHull />;
-    } else if (active === 'quickElimination') {
+    } else if (active === 'quickElimination' && points?.length > 0) {
       return <QuickElimination />;
     } else if (active === 'line') {
-      return <LineIntersection />;
+      return <LineIntersection method={lineIntersectionType} />;
     }
     // Add more conditions for other components if needed
     return <div />;
@@ -250,7 +256,7 @@ export const PointsForm = ({ p5 }: { p5: p5 | null }) => {
           </div>
         )}
 
-        {active !== 'line' && (
+        {active !== 'line' ? (
           <fieldset className='pb-2'>
             <legend className='text-base font-semibold leading-6 text-white'>
               Distribution of generated points
@@ -318,6 +324,62 @@ export const PointsForm = ({ p5 }: { p5: p5 | null }) => {
                   className='block text-sm font-medium leading-6 text-white'
                 >
                   Gaussian
+                </label>
+              </div>
+            </div>
+          </fieldset>
+        ) : (
+          <fieldset className='pb-2'>
+            <legend className='text-base font-semibold leading-6 text-white'>
+              Type of Line Intersection
+            </legend>
+            <div className='mt-2 space-y-3'>
+              <div className='flex items-center gap-x-3'>
+                <input
+                  id='crossProduct'
+                  name='crossProduct'
+                  type='radio'
+                  checked={lineIntersectionType === 'crossProduct'}
+                  onChange={() => setLineIntersectionType('crossProduct')}
+                  className='h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600'
+                />
+                <label
+                  htmlFor='crossProduct'
+                  className='block text-sm font-medium leading-6 text-white'
+                >
+                  Cross Product
+                </label>
+              </div>
+              <div className='flex items-center gap-x-3'>
+                <input
+                  id='orientation'
+                  name='orientation'
+                  type='radio'
+                  checked={lineIntersectionType === 'orientation'}
+                  onChange={() => setLineIntersectionType('orientation')}
+                  className='h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600'
+                />
+                <label
+                  htmlFor='orientation'
+                  className='block text-sm font-medium leading-6 text-white'
+                >
+                  Orientation
+                </label>
+              </div>
+              <div className='flex items-center gap-x-3'>
+                <input
+                  id='boundingBox'
+                  name='boundingBox'
+                  type='radio'
+                  checked={lineIntersectionType === 'boundingBox'}
+                  onChange={() => setLineIntersectionType('boundingBox')}
+                  className='h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600'
+                />
+                <label
+                  htmlFor='boundingBox'
+                  className='block text-sm font-medium leading-6 text-white'
+                >
+                  Bounding Box
                 </label>
               </div>
             </div>
